@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = 'jaipal9669/my-web-app:latest'
+        DOCKER_CREDENTIALS_ID = 'jaipal9669' // Define the credentials ID as an environmental variable
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git credentialsId: 'jaipal', url: 'https://github.com/jpr-pa/webpagesep24.git'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build the Docker image
+                    docker.build('my-web-app')
+                }
+            }
+        }
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    // Log in to Docker Hub using the environmental variable for the credentials ID
+                    withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        writeFile file: 'docker_password.txt', text: "${DOCKER_PASSWORD}"
+                        bat "docker login -u ${DOCKER_USERNAME} --password-stdin < docker_password.txt"
+                        // Clean up the temporary file
+                        bat "del docker_password.txt"
+                    }
+ 
+                    bat "docker tag my-web-app ${DOCKER_IMAGE}"
+                    bat "docker push ${DOCKER_IMAGE}"
+                }
+            }
+        }
+        stage('Deploy to Production') {
+            steps {
+                script {
+                    bat "docker run -d --name Mycontainer -p 8081:80 ${DOCKER_IMAGE}"
+         }
+            }
+         }
+    
+    }
+}

@@ -1,0 +1,27 @@
+pipeline {
+    agent any
+
+   stages {
+        stage('Hello') {
+            steps {
+                git credentialsId: 'jaipal', url: 'https://github.com/jpr-pa/docker-jenkins.git'
+            }
+        }
+        stage('build Docker image') {
+            steps {
+                script {
+                docker.build('my-sever-img')
+                }
+                
+            }
+        }
+        stage('Run Docker image ') {
+            steps {
+                script {
+                docker.image('my-sever-img').run('-p 8083:80')
+                }
+                
+            }
+        }
+}
+    }

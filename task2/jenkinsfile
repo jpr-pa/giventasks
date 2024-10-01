@@ -1,0 +1,53 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Checkout the code from the Git repository
+                git credentialsId: 'jaipal', url: 'https://github.com/jpr-pa/task.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    docker.build('run-the-web')
+                }
+            }
+        }
+
+        stage('Stop and Remove Existing Container') {
+            steps {
+                script {
+                    def containerId = bat(script: 'docker ps -a -q -f name=changerpower', returnStdout: true).trim()
+                    if (containerId) {
+                        bat "docker stop changerpower"
+                        bat "docker rm changerpower"
+                    }
+                    else {
+                echo "No container named 'changerpower' found. Skipping stop and remove."
+                    }
+                }
+            }
+        }
+
+        stage('Run New Docker Container') {
+            steps {
+                script {
+                    // Run a new container from the built image
+                    bat "docker run -d --name yahoowin -p 8081:80 run-the-web"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
+    }
+}

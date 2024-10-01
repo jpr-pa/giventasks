@@ -1,0 +1,55 @@
+pipeline {
+    agent any
+    
+    tools {
+        maven 'Maven 3.6.3'
+    }
+    environment {
+        DOCKER_IMAGE = 'jaipal9669/my-java-app:latest'
+        DOCKER_CREDENTIALS_ID = 'jaipal9669'
+    }
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git credentialsId: 'jaipal', url: 'https://github.com/jpr-pa/simple-java-app.git'
+            }
+        }
+        stage('Build') {
+            steps {
+                bat 'mvn clean package'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Check if the previous stage was successful
+                    docker.build('my-java-app')
+                }
+            }
+        }
+        
+        stage('Push to Docker Hub') {
+    steps {
+        script {
+            withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                writeFile file: 'docker_password.txt', text: "${DOCKER_PASSWORD}"
+                bat "docker login -u ${DOCKER_USERNAME} --password-stdin < docker_password.txt"
+                
+                bat "del docker_password.txt"
+                
+                bat "docker tag my-java-app ${DOCKER_IMAGE}"
+                bat "docker push ${DOCKER_IMAGE}"
+            }
+        }
+    }
+}
+
+        stage('Deploy') {
+            steps {
+                script {
+                bat "docker run -d --name my-java-app -p 8087:80 ${DOCKER_IMAGE}"
+                }
+            }
+        }
+    }
+}
