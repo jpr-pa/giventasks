@@ -4,7 +4,6 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from the Git repository
                 git credentialsId: 'jaipal', url: 'https://github.com/jpr-pa/task.git'
             }
         }
@@ -35,7 +34,6 @@ pipeline {
         stage('Run New Docker Container') {
             steps {
                 script {
-                    // Run a new container from the built image
                     bat "docker run -d --name yahoowin -p 8081:80 run-the-web"
                 }
             }
